@@ -26,11 +26,11 @@ batch_connect:
 #
 script:
   # Number of CPU cores requested (becomes sbatch -n); guard against empty form field
-  cores: <%= [context.cores.to_i, 1].max %>
+  cores: <%= [cores.to_i, 1].max %>
   native:
     # Memory for the job (sbatch --mem); without this Slurm would default to ~1TB per node
-    - "--mem=<%= context.mem.present? ? context.mem.strip : '16G' %>"
-<% if context.gpus.to_i.positive? -%>
+    - "--mem=<%= mem.present? ? mem.strip : '16G' %>"
+<% if gpus.to_i.positive? -%>
     # Requested GPUs (sbatch --gres); use partition 'gpu'
-    - "--gres=gpu:<%= context.gpus.to_i %>"
+    - "--gres=gpu:<%= gpus.to_i %>"
 <% end -%>
