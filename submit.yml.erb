@@ -24,8 +24,13 @@ batch_connect:
 # Configure the job script submission parameters for the batch job here
 # @see http://www.rubydoc.info/gems/ood_core/OodCore/Job/Script
 #
-#script:
-#  queue_name: "queue1"
-#  accounting_id: "account1"
-#  email_on_started: true
-#  native: # ... array of command line arguments ...
+script:
+  # Number of CPU cores requested (becomes sbatch -n); guard against empty form field
+  cores: <%= [context.cores.to_i, 1].max %>
+  native:
+    # Memory for the job (sbatch --mem); without this Slurm would default to ~1TB per node
+    - "--mem=<%= context.mem.present? ? context.mem.strip : '16G' %>"
+<% if context.gpus.to_i.positive? -%>
+    # Requested GPUs (sbatch --gres); use partition 'gpu'
+    - "--gres=gpu:<%= context.gpus.to_i %>"
+<% end -%>

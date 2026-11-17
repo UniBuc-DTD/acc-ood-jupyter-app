@@ -9,25 +9,51 @@
 cluster: "cluster"
 
 # Define attribute values that aren't meant to be modified by the user within
-# the Dashboard form
+# the Dashboard form (plain values = fixed attributes, not shown on the form).
+# Hash values = editable attributes with widget options
+# (widget, value, label, help, min, max, ...).
 attributes:
   # Set the corresponding modules that need to be loaded for Jupyter to run
   #
   # @note It is called within the batch job as `module load <modules>` if
   #   defined
-  # @example Do not load any modules
-  #     modules: ""
-  # @example Using default python module
-  #     modules: "python"
-  # @example Using specific python module
-  #     modules: "python/3.5"
-  # @example Using combination of modules
-  #     modules: "python/3.5 cuda/8.0.44"
   modules: "tools/jupyter"
 
   # Any extra command line arguments to feed to the `jupyter notebook ...`
   # command that launches the Jupyter notebook within the batch job
   extra_jupyter_args: ""
+
+  # Optional user virtualenv to register as a notebook kernel (venv-kernel)
+  venv_path:
+    widget: "text_field"
+    value: ""
+    label: "Virtual environment path"
+    help: "Optional: absolute path to a virtualenv on shared storage with `ipykernel` and `venv-kernel` installed (e.g. /mnt/home/yourname/.venvs/myproj). It is registered as an extra notebook kernel you can select per-notebook from the Kernel menu. The server itself always runs from the shared tools/jupyter venv."
+
+  # CPU cores for the notebook job (sbatch -n)
+  cores:
+    widget: "number_field"
+    value: "1"
+    min: 1
+    max: 256
+    label: "CPU cores"
+    help: "CPU cores for this notebook (single node). CPU nodes have 256 cores; the GPU node has 224."
+
+  # Memory for the notebook job (sbatch --mem)
+  mem:
+    widget: "text_field"
+    value: "16G"
+    label: "Memory"
+    help: "Memory for this notebook, in Slurm units (e.g. 4G, 32G, 1T). Most notebooks are fine with 16G."
+
+  # GPUs for the notebook job (sbatch --gres=gpu:N)
+  gpus:
+    widget: "number_field"
+    value: "0"
+    min: 0
+    max: 2
+    label: "GPUs"
+    help: "GPUs to allocate (0 = CPU only). When > 0, select partition 'gpu' (hpc-nodegpu01, up to 2x NVIDIA H100 80GB)."
 
 # All of the attributes that make up the Dashboard form (in respective order),
 # and made available to the submit configuration file and the template ERB
@@ -35,14 +61,18 @@ attributes:
 #
 # @note You typically do not need to modify this unless you want to add a new
 #   configurable value
-# @note If an attribute listed below is hard-coded above in the `attributes`
+# @note If an attribute listed below is hard-coded above in the `attributes:`
 #   option, then it will not appear in the form page that the user sees in the
 #   Dashboard
 form:
   - modules
   - extra_jupyter_args
+  - venv_path
   - bc_account
   - bc_queue
+  - cores
+  - mem
+  - gpus
   - bc_num_hours
   - bc_num_slots
   - bc_email_on_started

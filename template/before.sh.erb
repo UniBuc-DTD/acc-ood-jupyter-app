@@ -56,3 +56,34 @@ c.ServerApp.disable_check_xsrf = True
 c.PasswordIdentityProvider.hashed_password = 'sha1:${SALT}:${PASSWORD_SHA1}'
 EOL
 )
+
+#
+# If the user supplied a virtualenv, register it as an extra Jupyter kernel
+# (via venv-kernel) so it can be selected per-notebook from the Kernel menu.
+# The virtualenv must have 'ipykernel' and 'venv-kernel' installed.
+# The notebook server itself keeps running from the shared tools/jupyter venv.
+#
+<% if context.venv_path.present? -%>
+USER_VENV="<%= context.venv_path.strip %>"
+
+if [ ! -f "${USER_VENV}/bin/activate" ]; then
+  echo "ERROR: '${USER_VENV}' is not a valid virtualenv (no bin/activate found)" >&2
+  exit 1
+fi
+
+if [ -x "${USER_VENV}/bin/venv-kernel" ]; then
+  # venv-kernel refuses to run unless the venv is "active" (checks $VIRTUAL_ENV).
+  # Provide it for this single command only, so the job's PATH is unchanged
+  # afterwards and the notebook server still runs from the shared venv.
+  if VIRTUAL_ENV="${USER_VENV}" PATH="${USER_VENV}/bin:${PATH}" \
+       "${USER_VENV}/bin/venv-kernel" install --name "$(basename "${USER_VENV}")"; then
+    echo "Registered notebook kernel for virtualenv: ${USER_VENV}"
+  else
+    echo "WARNING: venv-kernel install failed; make sure 'ipykernel' is installed in ${USER_VENV}" >&2
+  fi
+else
+  echo "WARNING: 'venv-kernel' not found in ${USER_VENV}." >&2
+  echo "To use this virtualenv as a notebook kernel, install 'ipykernel' and 'venv-kernel' into it:" >&2
+  echo "  ${USER_VENV}/bin/python -m pip install 'setuptools<81' ipykernel venv-kernel" >&2
+fi
+<% end -%>
